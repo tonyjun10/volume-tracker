@@ -523,6 +523,9 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   fetchData(currentPeriod);
+
+  // Auto-refresh every 30 seconds
+  setInterval(() => fetchData(currentPeriod), 30000);
 </script>
 </body>
 </html>
