@@ -9,282 +9,101 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:        #0a0c0f;
-      --surface:   #111418;
-      --border:    #1e2328;
-      --text:      #e8eaed;
-      --muted:     #6b7280;
-      --accent1:   #4ade80;   /* parataxis eth — green */
-      --accent2:   #60a5fa;   /* bitmax — blue */
-      --accent3:   #f59e0b;   /* bitplanet — amber */
-      --pill-bg:   #1a1d22;
-      --pill-active: #e8eaed;
-      --pill-text-active: #0a0c0f;
+      --bg:       #0a0c0f;
+      --surface:  #111418;
+      --border:   #1e2328;
+      --text:     #e8eaed;
+      --muted:    #6b7280;
+      --c1:       #e8eaed;  /* parataxis korea — white */
+      --c2:       #4ade80;  /* parataxis eth  — green */
+      --c3:       #60a5fa;  /* bitmax         — blue */
+      --c4:       #f59e0b;  /* bitplanet      — amber */
     }
+    html, body { height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Syne', sans-serif; font-size: 14px; }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
-    }
+    .wrapper { max-width: 1140px; margin: 0 auto; padding: 48px 24px 72px; }
 
-    /* ── Layout ── */
-    .wrapper {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 48px 24px 64px;
-    }
+    /* Header */
+    .header { display:flex; align-items:flex-end; justify-content:space-between;
+      flex-wrap:wrap; gap:16px; margin-bottom:36px; }
+    .brand-tag { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px;
+      text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .header h1 { font-size:26px; font-weight:800; letter-spacing:-0.5px; }
+    .updated { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); text-align:right; }
+    .updated span { display:block; color:var(--text); font-size:12px; margin-top:2px; }
 
-    /* ── Header ── */
-    .header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 40px;
-    }
+    /* Toolbar */
+    .toolbar { display:flex; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+    .pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .pills button {
+      background:#1a1d22; color:var(--muted); border:1px solid var(--border);
+      border-radius:6px; padding:6px 14px; font-family:'DM Mono',monospace;
+      font-size:12px; cursor:pointer; transition:all .15s; }
+    .pills button:hover { color:var(--text); border-color:#3a3f47; }
+    .pills button.active { background:var(--text); color:#0a0c0f;
+      border-color:var(--text); font-weight:500; }
+    .currency-toggle { display:flex; gap:6px; }
+    .currency-toggle button {
+      background:#1a1d22; color:var(--muted); border:1px solid var(--border);
+      border-radius:6px; padding:6px 12px; font-family:'DM Mono',monospace;
+      font-size:11px; cursor:pointer; transition:all .15s; letter-spacing:.5px; }
+    .currency-toggle button.active { background:#1e2328; color:var(--text); border-color:#4a4f57; }
 
-    .header-left h1 {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      line-height: 1.1;
-    }
+    /* Legend */
+    .legend { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .leg { display:flex; align-items:center; gap:7px; cursor:pointer; padding:5px 11px;
+      border-radius:6px; border:1px solid var(--border); background:#1a1d22;
+      transition:all .15s; user-select:none; font-size:12px; font-weight:600; }
+    .leg:hover { border-color:#3a3f47; }
+    .leg.dim { opacity:.3; }
+    .leg-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .leg-src { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); }
+    .halted-badge { font-family:'DM Mono',monospace; font-size:9px; color:#ef4444;
+      border:1px solid #ef444433; border-radius:3px; padding:1px 4px; }
 
-    .header-left h1 span {
-      color: var(--text);
-    }
+    /* Cards */
+    .card { background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:24px; margin-bottom:20px; position:relative; }
+    .card-title { font-size:12px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.8px; color:var(--muted); margin-bottom:16px; }
+    .chart-wrap { position:relative; }
+    .chart-wrap.tall { height:360px; }
+    .chart-wrap.short { height:280px; }
 
-    .header-left p {
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      margin-top: 6px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
+    .loading { position:absolute; inset:0; display:flex; align-items:center;
+      justify-content:center; background:var(--surface); border-radius:8px;
+      z-index:10; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .loading.on { opacity:1; pointer-events:all; }
+    .spinner { width:22px; height:22px; border:2px solid var(--border);
+      border-top-color:var(--c2); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
-    .updated {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      text-align: right;
-    }
+    /* Stats */
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+    @media(max-width:700px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
+    .stat-card { background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:18px; }
+    .stat-head { display:flex; align-items:center; gap:7px; margin-bottom:14px; }
+    .stat-dot { width:8px; height:8px; border-radius:50%; }
+    .stat-name { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+    .stat-row { display:flex; justify-content:space-between; align-items:baseline;
+      padding:5px 0; border-bottom:1px solid var(--border); }
+    .stat-row:last-child { border-bottom:none; }
+    .stat-lbl { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.4px; }
+    .stat-val { font-family:'DM Mono',monospace; font-size:12px; }
+    .err { font-family:'DM Mono',monospace; font-size:11px; color:#ef4444; text-align:center; padding:8px; }
 
-    .updated span {
-      display: block;
-      color: var(--text);
-      font-size: 12px;
-      margin-top: 2px;
-    }
+    /* Pie + line row */
+    .two-col { display:grid; grid-template-columns:1fr 2fr; gap:16px; margin-bottom:20px; }
+    @media(max-width:700px){ .two-col{ grid-template-columns:1fr; } }
 
-    /* ── Controls ── */
-    .controls {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .range-pills {
-      display: flex;
-      gap: 6px;
-    }
-
-    .range-pills button {
-      background: var(--pill-bg);
-      color: var(--muted);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-family: 'DM Mono', monospace;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      letter-spacing: 0.3px;
-    }
-
-    .range-pills button:hover {
-      color: var(--text);
-      border-color: #3a3f47;
-    }
-
-    .range-pills button.active {
-      background: var(--pill-active);
-      color: var(--pill-text-active);
-      border-color: var(--pill-active);
-      font-weight: 500;
-    }
-
-    /* ── Legend toggles ── */
-    .legend {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--pill-bg);
-      transition: all 0.15s ease;
-      user-select: none;
-    }
-
-    .legend-item:hover { border-color: #3a3f47; }
-
-    .legend-item.dimmed {
-      opacity: 0.35;
-    }
-
-    .legend-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .legend-label {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
-    }
-
-    .legend-source {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      color: var(--muted);
-      margin-left: 2px;
-    }
-
-    /* ── Chart card ── */
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      position: relative;
-      margin-bottom: 24px;
-    }
-
-    .chart-wrap {
-      position: relative;
-      height: 380px;
-    }
-
-    .loading-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--surface);
-      border-radius: 8px;
-      z-index: 10;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-
-    .loading-overlay.visible {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent1);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Stats row ── */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    @media (max-width: 640px) {
-      .stats-grid { grid-template-columns: 1fr; }
-    }
-
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-    }
-
-    .stat-card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .stat-card-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .stat-card-name {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      padding: 5px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .stat-row:last-child { border-bottom: none; }
-
-    .stat-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .stat-value {
-      font-family: 'DM Mono', monospace;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .error-msg {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      color: #ef4444;
-      text-align: center;
-      padding: 8px;
-    }
+    /* FX badge */
+    .fx-badge { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted);
+      margin-top:6px; text-align:right; }
   </style>
 </head>
 <body>
@@ -292,240 +111,269 @@
 
   <!-- Header -->
   <div class="header">
-    <div class="header-left">
-      <div style="margin-bottom:10px;">
-        <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">PARATAXIS KOREA</div>
-        <h1>Volume Tracker</h1>
-      </div>
-      <p>Historical trading volume — KOSDAQ</p>
+    <div>
+      <div class="brand-tag">PARATAXIS KOREA</div>
+      <h1>Volume Tracker</h1>
     </div>
-    <div class="updated">
-      LAST UPDATED
-      <span id="updated-time">—</span>
+    <div class="updated">LAST UPDATED<span id="ts">—</span></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="pills" id="ranges">
+      <button data-p="1m" class="active">1M</button>
+      <button data-p="3m">3M</button>
+      <button data-p="6m">6M</button>
+      <button data-p="12m">12M</button>
+      <button data-p="24m">24M</button>
+    </div>
+    <div class="currency-toggle">
+      <button data-c="usd" class="active">USD</button>
+      <button data-c="krw">KRW</button>
     </div>
   </div>
 
-  <!-- Controls -->
-  <div class="controls">
-    <div class="range-pills">
-      <button data-period="1d">1D</button>
-      <button data-period="5d">5D</button>
-      <button data-period="1m" class="active">1M</button>
-      <button data-period="1y">1Y</button>
-      <button data-period="5y">5Y</button>
-      <button data-period="all">All</button>
-    </div>
-    <div class="legend" id="legend"></div>
-  </div>
+  <!-- Legend -->
+  <div class="legend" id="legend"></div>
 
-  <!-- Chart -->
-  <div class="chart-card">
-    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
-    <div class="chart-wrap">
-      <canvas id="volumeChart"></canvas>
-    </div>
+  <!-- Volume chart -->
+  <div class="card">
+    <div class="card-title">Trading Volume Turnover</div>
+    <div class="loading" id="load1"><div class="spinner"></div></div>
+    <div class="chart-wrap tall"><canvas id="volChart"></canvas></div>
+    <div class="fx-badge" id="fx-badge"></div>
   </div>
 
   <!-- Stats -->
-  <div class="stats-grid" id="stats-grid"></div>
+  <div class="stats-grid" id="stats"></div>
+
+  <!-- Market share row -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Volume Market Share</div>
+      <div class="chart-wrap short"><canvas id="pieChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Market Share Over Time</div>
+      <div class="loading" id="load2"><div class="spinner"></div></div>
+      <div class="chart-wrap short"><canvas id="shareChart"></canvas></div>
+    </div>
+  </div>
 
 </div>
 
 <script>
-  // ── Config ──────────────────────────────────────────────────────────────────
-  const STOCKS = {
-    parataxis_eth: { label: "Parataxis Ethereum", color: "#4ade80", ticker: "290560" },
-    bitmax:        { label: "Bitmax",              color: "#60a5fa", ticker: "241590" },
-    bitplanet:     { label: "Bitplanet",           color: "#f59e0b", ticker: "034230" },
-  };
+const STOCKS = {
+  parataxis_korea: { label:"Parataxis Korea",    color:"#e8eaed" },
+  parataxis_eth:   { label:"Parataxis Ethereum", color:"#4ade80" },
+  bitmax:          { label:"Bitmax",             color:"#60a5fa" },
+  bitplanet:       { label:"Bitplanet",          color:"#f59e0b" },
+};
+const KEYS   = Object.keys(STOCKS);
+const hidden = new Set();
+let period   = "1m";
+let currency = "usd";
+let last     = null;
 
-  const keys    = Object.keys(STOCKS);
-  const hidden  = new Set();   // toggled-off stocks
-  let currentPeriod = "1m";
-  let chart = null;
-  let lastData = null;
-
-  // ── Chart init ──────────────────────────────────────────────────────────────
-  const ctx = document.getElementById("volumeChart").getContext("2d");
-  chart = new Chart(ctx, {
-    type: "bar",
-    data: { labels: [], datasets: [] },
+// ── Chart init ────────────────────────────────────────────────────────────────
+function makeChart(id, type, opts = {}) {
+  return new Chart(document.getElementById(id).getContext("2d"), {
+    type,
+    data:    { labels: [], datasets: [] },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "#1a1d22",
-          borderColor: "#2a2d32",
-          borderWidth: 1,
-          titleFont: { family: "'DM Mono', monospace", size: 11 },
-          bodyFont:  { family: "'DM Mono', monospace", size: 11 },
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${fmtVol(ctx.parsed.y)}`
-          }
-        }
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor:"#1a1d22", borderColor:"#2a2d32", borderWidth:1,
+        titleFont:{ family:"'DM Mono',monospace", size:11 },
+        bodyFont: { family:"'DM Mono',monospace", size:11 },
+      }},
+      scales: type === "pie" ? {} : {
+        x: { grid:{color:"#1a1d22"}, ticks:{color:"#6b7280", font:{family:"'DM Mono',monospace",size:10}, maxTicksLimit:10}, border:{color:"#1e2328"} },
+        y: { grid:{color:"#1a1d22"}, ticks:{color:"#6b7280", font:{family:"'DM Mono',monospace",size:10}, callback: v => fmtAxis(v)}, border:{color:"#1e2328"} },
       },
-      scales: {
-        x: {
-          grid:   { color: "#1a1d22" },
-          ticks:  { color: "#6b7280", font: { family: "'DM Mono', monospace", size: 10 }, maxTicksLimit: 10 },
-          border: { color: "#1e2328" }
-        },
-        y: {
-          grid:   { color: "#1a1d22" },
-          ticks:  { color: "#6b7280", font: { family: "'DM Mono', monospace", size: 10 }, callback: v => fmtVol(v) },
-          border: { color: "#1e2328" }
-        }
-      }
+      ...opts
     }
   });
+}
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  function fmtVol(v) {
-    if (v == null) return "—";
-    if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + "M";
-    if (v >= 1_000)     return (v / 1_000).toFixed(0) + "K";
-    return v.toString();
+const volChart   = makeChart("volChart",   "bar", {
+  interaction:{ mode:"index", intersect:false },
+  plugins:{ tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmtFull(c.parsed.y)}` } } }
+});
+const pieChart   = makeChart("pieChart",   "pie", {
+  plugins:{ tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.parsed.toFixed(1)}%` } } }
+});
+const shareChart = makeChart("shareChart", "line", {
+  interaction:{ mode:"index", intersect:false },
+  plugins:{ tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` } } },
+  scales:{
+    x:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},maxTicksLimit:10}, border:{color:"#1e2328"} },
+    y:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},callback:v=>v+"%"}, border:{color:"#1e2328"}, min:0, max:100 },
   }
+});
 
-  function fmtVolFull(v) {
-    if (v == null) return "—";
-    return v.toLocaleString();
-  }
+// ── Format helpers ────────────────────────────────────────────────────────────
+function fmtAxis(v) {
+  if (v == null) return "—";
+  const sym = currency === "usd" ? "$" : "₩";
+  if (v >= 1e9)  return sym + (v/1e9).toFixed(1)  + "B";
+  if (v >= 1e6)  return sym + (v/1e6).toFixed(1)  + "M";
+  if (v >= 1e3)  return sym + (v/1e3).toFixed(0)  + "K";
+  return sym + v;
+}
+function fmtFull(v) {
+  if (v == null) return "—";
+  const sym = currency === "usd" ? "$" : "₩";
+  return sym + v.toLocaleString(undefined, {maximumFractionDigits: currency==="usd"?0:0});
+}
 
-  // ── Legend ──────────────────────────────────────────────────────────────────
-  function buildLegend(data) {
-    const el = document.getElementById("legend");
-    el.innerHTML = "";
-    keys.forEach(key => {
-      const s   = STOCKS[key];
-      const src = data?.[key]?.source || "";
-      const div = document.createElement("div");
-      div.className = "legend-item" + (hidden.has(key) ? " dimmed" : "");
-      div.innerHTML = `
-        <div class="legend-dot" style="background:${s.color}"></div>
-        <span class="legend-label">${s.label}</span>
-        <span class="legend-source">${src ? "[" + src + "]" : ""}</span>
-      `;
-      div.addEventListener("click", () => toggleStock(key));
-      el.appendChild(div);
-    });
-  }
+// ── Legend ────────────────────────────────────────────────────────────────────
+function buildLegend(data) {
+  const el = document.getElementById("legend");
+  el.innerHTML = "";
+  KEYS.forEach(k => {
+    const s   = STOCKS[k];
+    const src = data?.[k]?.source || "";
+    const hal = data?.[k]?.halted;
+    const d   = document.createElement("div");
+    d.className = "leg" + (hidden.has(k) ? " dim" : "");
+    d.innerHTML = `<div class="leg-dot" style="background:${s.color}"></div>
+      ${s.label}
+      ${src && src !== "error" ? `<span class="leg-src">[${src}]</span>` : ""}
+      ${hal ? `<span class="halted-badge">HALTED</span>` : ""}`;
+    d.onclick = () => { hidden.has(k)?hidden.delete(k):hidden.add(k); if(last)render(last); buildLegend(data); };
+    el.appendChild(d);
+  });
+}
 
-  function toggleStock(key) {
-    if (hidden.has(key)) hidden.delete(key); else hidden.add(key);
-    if (lastData) renderChart(lastData);
-    document.querySelectorAll(".legend-item").forEach((el, i) => {
-      el.classList.toggle("dimmed", hidden.has(keys[i]));
-    });
-  }
+// ── Render charts ─────────────────────────────────────────────────────────────
+function render(json) {
+  last = json;
+  const data = json.data;
 
-  // ── Chart render ────────────────────────────────────────────────────────────
-  function renderChart(data) {
-    // Collect all unique dates across stocks
-    const dateSet = new Set();
-    keys.forEach(k => (data[k]?.dates || []).forEach(d => dateSet.add(d)));
-    const labels = Array.from(dateSet).sort();
+  // Shared dates
+  const allDates = [...new Set(KEYS.flatMap(k => data[k]?.dates||[]))].sort();
 
-    const datasets = keys.map(key => {
-      const s      = STOCKS[key];
-      const stock  = data[key] || {};
-      const dateMap = {};
-      (stock.dates || []).forEach((d, i) => { dateMap[d] = stock.volumes[i]; });
-      return {
-        label:           s.label,
-        data:            labels.map(d => dateMap[d] ?? null),
-        backgroundColor: hidden.has(key) ? "transparent" : s.color + "99",
-        borderColor:     hidden.has(key) ? "transparent" : s.color,
-        borderWidth:     1,
-        borderRadius:    2,
-      };
-    });
+  // Volume bar chart
+  volChart.data.labels   = allDates;
+  volChart.data.datasets = KEYS.map(k => {
+    const s = STOCKS[k];
+    const v = data[k] || {};
+    const map = {};
+    (v.dates||[]).forEach((d,i)=>map[d]=v.turnover[i]);
+    return {
+      label:           s.label,
+      data:            allDates.map(d=>map[d]??null),
+      backgroundColor: hidden.has(k) ? "transparent" : s.color+"99",
+      borderColor:     hidden.has(k) ? "transparent" : s.color,
+      borderWidth: 1, borderRadius: 2,
+    };
+  });
+  volChart.update("none");
 
-    chart.data.labels   = labels;
-    chart.data.datasets = datasets;
-    chart.update("none");
-  }
+  // Pie chart
+  const pie = json.pie;
+  pieChart.data.labels   = KEYS.map(k=>STOCKS[k].label);
+  pieChart.data.datasets = [{
+    data:            KEYS.map(k=>pie[k]?.pct||0),
+    backgroundColor: KEYS.map(k=>STOCKS[k].color+"cc"),
+    borderColor:     KEYS.map(k=>STOCKS[k].color),
+    borderWidth: 1,
+  }];
+  pieChart.update("none");
 
-  // ── Stats ───────────────────────────────────────────────────────────────────
-  function renderStats(data) {
-    const grid = document.getElementById("stats-grid");
-    grid.innerHTML = "";
-    keys.forEach(key => {
-      const s      = STOCKS[key];
-      const stock  = data[key] || {};
-      const vols   = (stock.volumes || []).filter(v => v != null && v > 0);
-      const latest = vols.length ? vols[vols.length - 1] : null;
-      const avg    = vols.length ? Math.round(vols.reduce((a, b) => a + b, 0) / vols.length) : null;
-      const high   = vols.length ? Math.max(...vols) : null;
-      const low    = vols.length ? Math.min(...vols) : null;
+  // Market share line chart
+  const ms = json.market_share;
+  shareChart.data.labels   = allDates;
+  shareChart.data.datasets = KEYS.map(k => {
+    const s   = STOCKS[k];
+    const msv = ms[k] || {};
+    const map = {};
+    (msv.dates||[]).forEach((d,i)=>map[d]=msv.shares[i]);
+    return {
+      label:       s.label,
+      data:        allDates.map(d=>map[d]??null),
+      borderColor: hidden.has(k) ? "transparent" : s.color,
+      backgroundColor: "transparent",
+      borderWidth: 2, pointRadius: 0, tension: 0.3,
+      hidden: hidden.has(k),
+    };
+  });
+  shareChart.update("none");
 
-      const card = document.createElement("div");
-      card.className = "stat-card";
-      card.innerHTML = `
-        <div class="stat-card-header">
-          <div class="stat-card-dot" style="background:${s.color}"></div>
-          <span class="stat-card-name">${s.label}</span>
-        </div>
-        ${stock.error ? `<div class="error-msg">No data available</div>` : `
-        <div class="stat-row">
-          <span class="stat-label">Latest</span>
-          <span class="stat-value">${fmtVolFull(latest)}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Average</span>
-          <span class="stat-value">${fmtVolFull(avg)}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Highest</span>
-          <span class="stat-value">${fmtVolFull(high)}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Lowest</span>
-          <span class="stat-value">${fmtVolFull(low)}</span>
-        </div>
-        `}
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  // ── Fetch ───────────────────────────────────────────────────────────────────
-  async function fetchData(period) {
-    const loading = document.getElementById("loading");
-    loading.classList.add("visible");
-    try {
-      const r    = await fetch(`/api/volume?period=${period}`);
-      const json = await r.json();
-      lastData   = json.data;
-      document.getElementById("updated-time").textContent = json.updated_at;
-      buildLegend(lastData);
-      renderChart(lastData);
-      renderStats(lastData);
-    } catch (e) {
-      console.error("Fetch error:", e);
-    } finally {
-      loading.classList.remove("visible");
-    }
-  }
-
-  // ── Period buttons ───────────────────────────────────────────────────────────
-  document.querySelectorAll(".range-pills button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".range-pills button").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentPeriod = btn.dataset.period;
-      fetchData(currentPeriod);
-    });
+  // Stats
+  const sym = currency === "usd" ? "$" : "₩";
+  const statsEl = document.getElementById("stats");
+  statsEl.innerHTML = "";
+  KEYS.forEach(k => {
+    const s    = STOCKS[k];
+    const v    = data[k] || {};
+    const t    = v.turnover || [];
+    const latest = t.length ? t[t.length-1] : null;
+    const high   = t.length ? Math.max(...t) : null;
+    const low    = t.length ? Math.min(...t.filter(x=>x>0)) : null;
+    const avg30  = v.avg_30d;
+    const card = document.createElement("div");
+    card.className = "stat-card";
+    card.innerHTML = `
+      <div class="stat-head">
+        <div class="stat-dot" style="background:${s.color}"></div>
+        <span class="stat-name">${s.label}</span>
+        ${v.halted ? `<span class="halted-badge">HALTED</span>` : ""}
+      </div>
+      ${v.error ? `<div class="err">No data</div>` : `
+      <div class="stat-row"><span class="stat-lbl">Latest</span><span class="stat-val">${latest!=null?sym+latest.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span></div>
+      <div class="stat-row"><span class="stat-lbl">30D Avg</span><span class="stat-val">${avg30!=null?sym+avg30.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Highest</span><span class="stat-val">${high!=null?sym+high.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Lowest</span><span class="stat-val">${low!=null?sym+low.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span></div>
+      `}
+    `;
+    statsEl.appendChild(card);
   });
 
-  // ── Init ─────────────────────────────────────────────────────────────────────
-  fetchData(currentPeriod);
+  document.getElementById("ts").textContent       = json.updated_at;
+  document.getElementById("fx-badge").textContent = `FX: 1 USD = ${json.fx_rate.toLocaleString(undefined,{maximumFractionDigits:0})} KRW`;
 
-  // Auto-refresh every 30 seconds
-  setInterval(() => fetchData(currentPeriod), 30000);
+  buildLegend(data);
+}
+
+// ── Fetch ─────────────────────────────────────────────────────────────────────
+async function fetchData() {
+  document.getElementById("load1").classList.add("on");
+  document.getElementById("load2").classList.add("on");
+  try {
+    const r    = await fetch(`/api/volume?period=${period}&currency=${currency}`);
+    const json = await r.json();
+    render(json);
+  } catch(e) { console.error(e); }
+  finally {
+    document.getElementById("load1").classList.remove("on");
+    document.getElementById("load2").classList.remove("on");
+  }
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+document.getElementById("ranges").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  document.querySelectorAll("#ranges button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  period = btn.dataset.p;
+  fetchData();
+});
+
+document.querySelector(".currency-toggle").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  document.querySelectorAll(".currency-toggle button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  currency = btn.dataset.c;
+  fetchData();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+fetchData();
+setInterval(fetchData, 30000);
 </script>
 </body>
 </html>
