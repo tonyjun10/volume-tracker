@@ -27,7 +27,7 @@ STOCKS = {
 
 # ── In-memory cache ────────────────────────────────────────────────────────────
 _cache: dict = {}
-CACHE_TTL = 300  # 5 minutes
+CACHE_TTL = 30   # 30 seconds — matches frontend auto-refresh
 
 
 def _cache_get(key: str):
