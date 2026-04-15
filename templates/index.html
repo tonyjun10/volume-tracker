@@ -68,7 +68,9 @@
     .card { background:var(--surface); border:1px solid var(--border);
       border-radius:12px; padding:24px; margin-bottom:20px; position:relative; }
     .card-title { font-size:12px; font-weight:700; text-transform:uppercase;
-      letter-spacing:.8px; color:var(--muted); margin-bottom:16px; }
+      letter-spacing:.8px; color:var(--muted); margin-bottom:4px; }
+    .card-subtitle { font-family:'DM Mono',monospace; font-size:10px; color:#4a4f57;
+      margin-bottom:14px; letter-spacing:.3px; }
     .chart-wrap { position:relative; }
     .chart-wrap.tall { height:360px; }
     .chart-wrap.short { height:280px; }
@@ -104,6 +106,13 @@
     /* FX badge */
     .fx-badge { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted);
       margin-top:6px; text-align:right; }
+
+    /* Smooth badge on share chart */
+    .smooth-badge {
+      display:inline-block; font-family:'DM Mono',monospace; font-size:9px;
+      color:#4ade8099; border:1px solid #4ade8033; border-radius:3px;
+      padding:1px 5px; margin-left:6px; vertical-align:middle; letter-spacing:.4px;
+    }
   </style>
 </head>
 <body>
@@ -151,10 +160,15 @@
   <div class="two-col">
     <div class="card">
       <div class="card-title">Volume Market Share</div>
+      <div class="card-subtitle">Full period</div>
       <div class="chart-wrap short"><canvas id="pieChart"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Market Share Over Time</div>
+      <div class="card-title">
+        Market Share Over Time
+        <span class="smooth-badge" id="smooth-badge">7D AVG</span>
+      </div>
+      <div class="card-subtitle" id="share-subtitle">7-day rolling average of daily turnover share</div>
       <div class="loading" id="load2"><div class="spinner"></div></div>
       <div class="chart-wrap short"><canvas id="shareChart"></canvas></div>
     </div>
@@ -175,6 +189,24 @@ let period   = "1m";
 let currency = "usd";
 let last     = null;
 
+// ── Rolling average window per period ─────────────────────────────────────────
+function smoothWindow(p) {
+  return (p === "1m" || p === "3m") ? 7 : 30;
+}
+
+// ── Rolling average helper ────────────────────────────────────────────────────
+// Returns an array the same length as `arr`.
+// For each index i, averages the window ending at i (trailing).
+// Leading values where fewer than `window` points exist use whatever is available
+// (no nulls introduced — keeps the chart fully populated).
+function rollingAvg(arr, window) {
+  return arr.map((_, i) => {
+    const slice = arr.slice(Math.max(0, i - window + 1), i + 1)
+                     .filter(v => v != null && !isNaN(v));
+    return slice.length > 0 ? slice.reduce((a, b) => a + b, 0) / slice.length : null;
+  });
+}
+
 // ── Chart init ────────────────────────────────────────────────────────────────
 function makeChart(id, type, opts = {}) {
   return new Chart(document.getElementById(id).getContext("2d"), {
@@ -185,30 +217,64 @@ function makeChart(id, type, opts = {}) {
       plugins: { legend: { display: false }, tooltip: {
         backgroundColor:"#1a1d22", borderColor:"#2a2d32", borderWidth:1,
         titleFont:{ family:"'DM Mono',monospace", size:11 },
-        bodyFont: { family:"'DM Mono',monospace", size:11 },
+        bodyFont:{ family:"'DM Mono',monospace", size:11 },
+        padding:10, displayColors:true, boxWidth:8, boxHeight:8, boxPadding:4,
       }},
-      scales: type === "pie" ? {} : {
-        x: { grid:{color:"#1a1d22"}, ticks:{color:"#6b7280", font:{family:"'DM Mono',monospace",size:10}, maxTicksLimit:10}, border:{color:"#1e2328"} },
-        y: { grid:{color:"#1a1d22"}, ticks:{color:"#6b7280", font:{family:"'DM Mono',monospace",size:10}, callback: v => fmtAxis(v)}, border:{color:"#1e2328"} },
-      },
       ...opts
     }
   });
 }
 
-const volChart   = makeChart("volChart",   "bar", {
+const volChart = makeChart("volChart", "bar", {
   interaction:{ mode:"index", intersect:false },
   plugins:{ tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${fmtFull(c.parsed.y)}` } } }
 });
-const pieChart   = makeChart("pieChart",   "pie", {
+
+const pieChart = makeChart("pieChart", "pie", {
   plugins:{ tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.parsed.toFixed(1)}%` } } }
 });
+
 const shareChart = makeChart("shareChart", "line", {
   interaction:{ mode:"index", intersect:false },
-  plugins:{ tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` } } },
+  plugins:{
+    tooltip:{
+      callbacks:{
+        title: items => items[0]?.label || "",
+        label: c => {
+          const v = c.parsed.y;
+          return v != null ? ` ${c.dataset.label}: ${v.toFixed(1)}%` : ` ${c.dataset.label}: —`;
+        },
+        footer: items => {
+          const total = items.reduce((s, c) => s + (c.parsed.y || 0), 0);
+          return `  Total shown: ${total.toFixed(1)}%`;
+        }
+      }
+    }
+  },
   scales:{
-    x:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},maxTicksLimit:10}, border:{color:"#1e2328"} },
-    y:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},callback:v=>v+"%"}, border:{color:"#1e2328"}, min:0, max:100 },
+    x:{
+      grid:{ color:"#1a1d2280" },
+      ticks:{
+        color:"#6b7280",
+        font:{ family:"'DM Mono',monospace", size:10 },
+        maxTicksLimit: 8,
+        maxRotation: 0,
+      },
+      border:{ color:"#1e2328" }
+    },
+    y:{
+      grid:{ color:"#1a1d2280" },
+      ticks:{
+        color:"#6b7280",
+        font:{ family:"'DM Mono',monospace", size:10 },
+        callback: v => v + "%",
+        maxTicksLimit: 6,
+      },
+      border:{ color:"#1e2328" },
+      min: 0,
+      max: 100,
+      stacked: false,
+    },
   }
 });
 
@@ -254,7 +320,7 @@ function render(json) {
   // Shared dates
   const allDates = [...new Set(KEYS.flatMap(k => data[k]?.dates||[]))].sort();
 
-  // Volume bar chart
+  // ── Volume bar chart ──────────────────────────────────────────────────────
   volChart.data.labels   = allDates;
   volChart.data.datasets = KEYS.map(k => {
     const s = STOCKS[k];
@@ -269,9 +335,13 @@ function render(json) {
       borderWidth: 1, borderRadius: 2,
     };
   });
+  volChart.options.scales = {
+    x:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},maxTicksLimit:10}, border:{color:"#1e2328"}, stacked:true },
+    y:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},callback:v=>fmtAxis(v)}, border:{color:"#1e2328"}, stacked:true },
+  };
   volChart.update("none");
 
-  // Pie chart
+  // ── Pie chart ─────────────────────────────────────────────────────────────
   const pie = json.pie;
   pieChart.data.labels   = KEYS.map(k=>STOCKS[k].label);
   pieChart.data.datasets = [{
@@ -282,26 +352,46 @@ function render(json) {
   }];
   pieChart.update("none");
 
-  // Market share line chart
-  const ms = json.market_share;
+  // ── Market Share Over Time — smoothed ─────────────────────────────────────
+  const win = smoothWindow(period);
+  const ms  = json.market_share;
+
+  // Update badge + subtitle
+  document.getElementById("smooth-badge").textContent   = win + "D AVG";
+  document.getElementById("share-subtitle").textContent =
+    win + "-day rolling average of daily turnover share";
+
+  // Build a date-keyed map of raw shares per company, then smooth
   shareChart.data.labels   = allDates;
   shareChart.data.datasets = KEYS.map(k => {
     const s   = STOCKS[k];
     const msv = ms[k] || {};
     const map = {};
-    (msv.dates||[]).forEach((d,i)=>map[d]=msv.shares[i]);
+    (msv.dates||[]).forEach((d,i) => map[d] = msv.shares[i]);
+
+    // Raw series aligned to allDates (null for missing days)
+    const raw     = allDates.map(d => map[d] ?? null);
+    // Apply rolling average
+    const smoothed = rollingAvg(raw, win);
+
     return {
-      label:       s.label,
-      data:        allDates.map(d=>map[d]??null),
-      borderColor: hidden.has(k) ? "transparent" : s.color,
-      backgroundColor: "transparent",
-      borderWidth: 2, pointRadius: 0, tension: 0.3,
-      hidden: hidden.has(k),
+      label:           s.label,
+      data:            smoothed,
+      borderColor:     hidden.has(k) ? "transparent" : s.color,
+      backgroundColor: hidden.has(k) ? "transparent" : s.color + "15",
+      fill:            false,
+      borderWidth:     2.5,
+      pointRadius:     0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: s.color,
+      tension:         0.4,   // smooth cubic spline
+      spanGaps:        true,  // bridge halted-stock gaps cleanly
+      hidden:          hidden.has(k),
     };
   });
   shareChart.update("none");
 
-  // Stats
+  // ── Stats cards ───────────────────────────────────────────────────────────
   const sym = currency === "usd" ? "$" : "₩";
   const statsEl = document.getElementById("stats");
   statsEl.innerHTML = "";
