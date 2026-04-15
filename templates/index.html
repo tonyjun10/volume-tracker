@@ -335,10 +335,6 @@ function render(json) {
       borderWidth: 1, borderRadius: 2,
     };
   });
-  volChart.options.scales = {
-    x:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},maxTicksLimit:10}, border:{color:"#1e2328"}, stacked:true },
-    y:{ grid:{color:"#1a1d22"}, ticks:{color:"#6b7280",font:{family:"'DM Mono',monospace",size:10},callback:v=>fmtAxis(v)}, border:{color:"#1e2328"}, stacked:true },
-  };
   volChart.update("none");
 
   // ── Pie chart ─────────────────────────────────────────────────────────────
