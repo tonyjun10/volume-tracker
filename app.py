@@ -12,8 +12,10 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
