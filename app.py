@@ -260,6 +260,11 @@ def api_volume():
     })
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
